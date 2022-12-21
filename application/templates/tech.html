@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Group Recommendations</title>
+    <link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='styles/style.css') }}" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+</head>
+<body>
+    <h1 id="vis_title"><a href="/">Anime Group Recommendations</a></h1>
+    <!-- <p>
+        This paragraph
+        contains a lot of lines
+        in the source code,<br>
+        but the browser
+        ignores it.
+        </p> -->
+        <table id="vis_table">
+          <tr>
+            <td>
+              <div id="d1"> 
+                <label for="categorySelect"><strong>Recommendation Type: </strong></label>
+                <select id="rectype_dropdown"></select>
+                <br>
+                <br>
+                <ul>
+                  <li><strong>Virtual User: </strong>Better chance of discovering hidden shared interests between group members</li>
+                  <li><strong>Combination: </strong>Safer recommendations that value popularity</li>
+                </ul>
+                <br>
+                <br>
+                <br>
+                <label for="categorySelect"><strong>Aggregation Method: </strong></label>
+                <select id="agg_dropdown"></select>
+                <br>
+                <br>
+                <ul>
+                  <li><strong>Min: </strong>Optimize for the least happy user</li>
+                  <li><strong>Max: </strong>Optimize for the most happy user</li>
+                  <li><strong>Mean: </strong>Compromise if member's interests are conflicted</li>
+                </ul>
+                <br>
+                <br>
+                <br>
+                <label for="categorySelect"><strong>Regularization: </strong></label>
+                <!-- <select id="reg_dropdown"></select> -->
+                <!-- <br> -->
+                <br>
+                <p>Choose a higher factor for safer, mainstream recommendations. Choose a lower factor for more niche anime with higher risk.</p>
+                <div><p id="value-simple"></p></div>
+                <div><div id="slider-simple"></div></div>
+              </div>
+            </td>
+            <td id="svg_here">
+
+            </td>
+          </tr>
+        </table>
+        
+    
+</body>
+<!-- <script src="//d3js.org/d3.v3.min.js"></script> -->
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/d3.v5.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/d3-dsv.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/topojson.v2.min.js') }}"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/d3-tip.min.js') }}"></script>
+<script src="https://unpkg.com/d3-simple-slider"></script>
+<script src="https://unpkg.com/d3@4.10.0/build/d3.min.js"></script>
+  <script>
+    $.post("/predict", {
+        reg: 1,
+        rec_type: 'virtual_user',
+        agg_method: "mean"
+    })
+    .done(function(data) {
+        var margin = {top: 20, right: 10, bottom: 20, left: 10};
+        var width = 500 - margin.right - margin.left,
+        height = 500 - margin.top - margin.bottom; 
+
+        
+        // define the dimensions and margins for the bar chart
+        d3.json("{{ url_for('static', filename='data/predictions.json') }}", function(d) {
+          data = d['results'];
+          console.log(data);
+
+          let selections = ["Virtual User","Combination"]
+          let values = ["virtual_user", "combine_recommender"]
+
+          var option1 = d3
+              .select("body")
+              .select("#rectype_dropdown")
+
+          option1.selectAll(".options")
+              .data(selections)
+              .enter()
+              .append("option")
+              .text(function(d) {return d})
+              .attr("value", function(d, i) {return values[i]})
+
+          var selectedValue1; 
+          option1.on("change", function() { 
+              selectedValue1 = this.value;
+              update_table();
+          })
+
+          selections = ["Mean", "Min", "Max"]
+          values = ["mean", "min", "max"]
+
+          var option2 = d3
+              .select("body")
+              .select("#agg_dropdown")
+
+          option2.selectAll(".options")
+              .data(selections)
+              .enter()
+              .append("option")
+              .text(function(d) {return d})
+              .attr("value", function(d, i) {return values[i]})
+
+          var selectedValue2; 
+          option2.on("change", function() { 
+              selectedValue2 = this.value;
+              update_table();
+          })
+
+          selections = ["0.01", "0.1", "1", "10", "100"]
+          values = [0.01, 0.1, 1, 10, 100]
+
+          // var option3 = d3
+          //     .select("body")
+          //     .select("#reg_dropdown")
+
+          // option3.selectAll(".options")
+          //     .data(selections)
+          //     .enter()
+          //     .append("option")
+          //     .text(function(d) {return d})
+          //     .attr("value", function(d, i) {return values[i]})
+
+          // var selectedValue3; 
+          // option3.on("change", function() { 
+          //     selectedValue3 = this.value;
+          //     update_table();
+          // })
+
+          var slider_data = [-2, -1, 0, 1, 2];
+          var selected_reg = 0;
+          var sliderStep = d3
+            .sliderBottom()
+            .min(d3.min(slider_data))
+            .max(d3.max(slider_data))
+            .width(300)
+            .ticks(5)
+            .tickFormat(d3.format('.1'))
+            .step(1)
+            .fill('#2196f3')
+            .default(0)
+            .on('onchange', val => {
+              selected_reg = val;
+              update_table()
+            });
+
+          var gStep = d3
+            .select('div#slider-simple')
+            .append('svg')
+            .attr('width', 350)
+            .attr('height', 100)
+            .append('g')
+            .attr('transform', 'translate(30,30)');
+
+          gStep.call(sliderStep);
+
+          var svg_r = d3.select("#svg_here").append("svg")
+            .attr("id", "rtable")
+            .attr("width", 800)
+            .attr("height", 800);
+
+          var tabulate = function (data) {
+            
+            var columns = ['rank','anime_name','overall_score']
+            var column_names = ['Rank', 'Anime Name', 'Score']
+              
+            var table =  d3.select("#ltable")
+                .append("foreignObject")
+                .attr("width", 300)
+                .attr("height", 400)
+                .append("xhtml:table");
+            var thead = table.append('thead')
+            var tbody = table.append('tbody')
+              
+            thead.append('tr')
+              .selectAll('th')
+                .data(column_names)
+                .enter()
+              .append('th')
+                .text(function (d) { return d })
+                  .style("font-size", "12px")
+                
+            var rows = tbody.selectAll('tr')
+                .data(data)
+                .enter(console.log(data))
+              .append('tr')
+
+            var cells = rows.selectAll('td')
+                .data(function(row) { 
+                      
+                  return columns.map(function (column) {
+
+                    return { column: column, value: row[column] }
+                  })
+                })
+                .enter()
+              .append('td')
+                .text(function (d) { return d.value })
+                .style("font-size", "12px")
+            
+            return table;
+          }
+
+          //initialize
+          //tabulate(data);
+          create_circle(data);
+
+          function update_table() {
+            //console.log("update");
+            svg_r.selectAll("g").remove();
+            $.post("/predict", {
+                reg: 10**selected_reg,//document.getElementById("reg_dropdown").value,
+                rec_type: document.getElementById("rectype_dropdown").value,
+                agg_method: document.getElementById("agg_dropdown").value
+            })
+            .done(function(data) {
+              d3.json("{{ url_for('static', filename='data/predictions.json') }}", function(d) {
+                data = d['results'];
+                create_circle(data)
+              });
+              
+            });
+            
+          }
+
+          // right side of svg
+
+          function create_circle(data) {
+              
+            var node = svg_r.selectAll(".node")
+              .data(data)
+              .enter().append("g")
+              .attr("class", "node")
+            
+            var scores = []
+
+            data.forEach((e) => {
+              scores.push(e.overall_score);
+            });
+            
+            var colors = d3.scaleQuantile()
+              .domain([1, 5])
+              .range([ "#0570b0", "#74a9cf", "#bdc9e1","#f1eef6"])
+
+            var xscale = d3.scaleLinear().domain([1,10]) .range([0,50])
+
+            var div = d3.select("body")
+              .append("div")  
+              .attr("class", "d3-tip")         
+              .style("opacity", 0);
+
+            node.append("svg:a")
+                .attr("xlink:href", function(d){ return "https://myanimelist.net/anime/" + d.anime_id})
+                .attr("target", "_blank")
+                .append("rect")
+                .attr("x", function(d) {
+                    return 85
+                })
+                .attr("y", function(d) {
+                    return 50 + xscale(d.rank) * 20
+                })
+                .attr("width", 500)
+                .attr("height", 100)
+                .attr("rx", 15)
+                .attr("ry", 15)
+              .style('fill', function(d) {   
+                return colors(d.rank); 
+              })
+              .on("mouseover", function(d){
+                  var content = "<img src=" + d.image_url + ">"
+                            + "<br><text class='tip_1'><strong>Genres: </strong>" + d.genres.slice(0, 3) + " </text>"
+                            + "<br><text><strong  class='tip_1'>User Predicted Scores:</strong></text>"
+                  for (user in d.individual_predictions) {
+                    content += "<br><text><strong  class='tip_1'>" + user +  ": </strong>" + d.individual_predictions[user] + " </text>"
+                  }
+                  div.html(content)
+                    .style("left", (d3.event.pageX+30) + "px")			 
+                    .style("top", (d3.event.pageY-100) + "px");
+                  div.style("opacity", .9);	
+              })
+              .on("mouseout",function(d) {
+                // div.transition()
+                //     .delay(5000)	
+                //     .style("opacity", 0);
+                div.style("opacity", 0);
+              })
+                
+
+              // .append("svg:a").attr("xlink:href", function(d){ return "https://myanimelist.net/anime/" + d.anime_id})
+            node.append("text")
+                .text(function(d) {
+                    return d.rank + ")";
+                  })
+                  .attr('x', 95)
+                  .attr("y", function(d) {
+                    return 75 + xscale(d.rank) * 20
+                }).style("fill", "black") 
+                .style("font-weight", "bold")
+                .attr("class", "rankText");
+
+            node.append("text")
+                .text(function(d) {
+                    return d.anime_name;
+                  })
+                  .attr('x', 95)
+                  .attr("y", function(d) {
+                    return 105 + xscale(d.rank) * 20
+                }).style("fill", "darkred") 
+                .style("font-weight", "bold")
+                .attr("class", "nameText");
+
+            node.append("text")
+                .text(function(d) {
+                    return "Score: "+ d.overall_score;
+                })
+                .attr('x', 95)
+                .attr("y", function(d) {
+                  return 135 + xscale(d.rank) * 20
+                })
+                .style("fill", "black") 
+                .style("font-weight", "bold")
+                .attr("class", "scoreText");
+
+              
+          }
+
+        });
+    });
+
+
+
+
+      
+    
+
+
+   
+</script>
+
+</body>
+</html>

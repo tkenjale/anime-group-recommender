@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Recommender</title>
+    <link rel="stylesheet" type= "text/css" href="{{ url_for('static', filename='styles/style.css') }}" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar_container">
+            <!-- <a href="/" id="navbar__logo">Anime Group Recommendation</a> -->
+            <h1 id="navbar__logo">Anime Group Recommendation</h1>
+            <ul class="navbar__menu">
+                <li class="navbar__item">
+                    <a href="/" class="navbar__links">
+                        Home
+                    </a>
+                </li>
+                <li class="navbar__item">
+                    <a href="https://myanimelist.net/" class="navbar__links" target="_blank">
+                        MyAnimeList
+                    </a>
+                </li>
+                
+                <li class="navbar__btn">
+                    <button id ="add-form-btn" type = "button" class="button">
+                        <a class="navbar__links">
+                            Add Form
+                        </a>
+                  </button>
+                </li>
+                <li class="navbar__btn"> 
+                    <button hidden id ="submit" type = "button"  onclick="func()" >
+                        <a class="navbar__links">
+                            Submit
+                        </a>
+                  </button>
+                </li>
+                <li class="navbar__btn"> 
+                    <button hidden id ="visualization"  type = "button">
+                        <a href="/visualize" class="navbar__links">
+                            Go to Visualization
+                        </a>
+                  </button>
+                </li> 
+               
+            </ul>
+        </div>
+    </nav>
+    <div onload="createAndAppendNewContactForm()" > 
+     
+        <h1 id="forms_h1">Forms</h1>
+        
+        <div id="form-container">
+        </div>
+        
+          
+    </div>   
+</body>
+
+
+<script type="text/javascript" src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/3.1.0/mustache.min.js"></script>
+    <script id="form-template" type="text/html">
+        <form  id="form-{{formId}}" class="contact-form" method="POST" action="submit.php" >
+          <h2>Form #{{formId}}</h2>
+          <div class="form-field" id = "form_field_id">
+            <label>Your Name</label>
+            <input id="name_input" type="text" name="Name" placeholder="Enter your name"/>
+            <br>
+            <input id="anime_input_0" type="text"  placeholder="Enter the name of Anime"/> <input id="rating_input_0" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_1" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_1" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_2" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_2" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_3" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_3" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_4" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_4" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_5" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_5" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_6" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_6" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_7" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_7" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_8" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_8" type="text" placeholder="Enter your rating"/>
+            <br>
+            <input id="anime_input_9" type="text" placeholder="Enter the name of Anime"/> <input id="rating_input_9" type="text" placeholder="Enter your rating"/>
+            
+          
+        </form>
+     </script>
+
+
+</script>
+
+</html>
